@@ -56,15 +56,15 @@ haproxy_config_default:
     - ssl-default-server-options {{ haproxy_ssl_default_options | join(" ") }}
     - ssl-dh-param-file /etc/haproxy/dhparam
     -
-    - maxconn 28000
+    - maxconn 400
   defaults:
     - log     global
     - mode    tcp
     - retries 2
-    - timeout connect 100
-    - timeout client  4500
-    - timeout server  4500
-    - timeout check   125
+    - timeout connect 4s
+    - timeout client  30m
+    - timeout server  30m
+    - timeout check   1s
     - errorfile 400 /etc/haproxy/errors/400.http
     - errorfile 403 /etc/haproxy/errors/403.http
     - errorfile 408 /etc/haproxy/errors/408.http
