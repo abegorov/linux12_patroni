@@ -7,9 +7,11 @@
     state: present
   retries: 10
   delay: 10
+  tags: [pgdg_repo]
 
 - name: Add pgdg repo
   ansible.builtin.command:
     cmd: /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
     creates: /etc/apt/sources.list.d/pgdg.sources
+  tags: [pgdg_repo]
 ...
