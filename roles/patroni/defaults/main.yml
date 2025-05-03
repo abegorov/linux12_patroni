@@ -248,6 +248,7 @@ patroni_config:
 
     pg_hba:
       - local   all             postgres                     peer
+      - local   all             all                          scram-sha-256
       - hostssl all             all           127.0.0.1/32   scram-sha-256
         clientcert=verify-ca
       - hostssl all             all           ::1/128        scram-sha-256

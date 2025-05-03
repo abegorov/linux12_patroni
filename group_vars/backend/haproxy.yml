@@ -23,7 +23,6 @@ haproxy_config_append:
     - load crt "web.crt" key "web.key"
   defaults:
     -
-    - # Patroni http health checks
     - default-server inter 100 fall 3 rise 2 on-marked-down shutdown-sessions
       verify required ca-file "patronica.crt" crt "patroni.crt"
   userlist stats:
@@ -57,5 +56,29 @@ haproxy_config_append:
     - |
       {% for server in haproxy_patroni_servers %}
       server {{ server }} {{ hostvars[server].ip_address }}:5432 check
+      {% endfor %}
+  listen pgbouncer-primary:
+    - bind 127.0.0.1:6000
+    - bind ::1:6000
+    - bind {{ ip_address }}:6000
+    - option httpchk
+    - http-check connect port 8008 ssl
+    - http-check send meth OPTIONS uri /primary
+    - http-check expect status 200
+    - |
+      {% for server in haproxy_patroni_servers %}
+      server {{ server }} {{ hostvars[server].ip_address }}:6432 check
+      {% endfor %}
+  listen pgbouncer-replicas:
+    - bind 127.0.0.1:6001
+    - bind ::1:6001
+    - bind {{ ip_address }}:6001
+    - option httpchk
+    - http-check connect port 8008 ssl
+    - http-check send meth OPTIONS uri /replica
+    - http-check expect status 200
+    - |
+      {% for server in haproxy_patroni_servers %}
+      server {{ server }} {{ hostvars[server].ip_address }}:6432 check
       {% endfor %}
 ...
