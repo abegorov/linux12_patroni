@@ -1,0 +1,43 @@
+---
+- name: Update initdb options
+  community.general.ini_file:
+    path: /etc/postgresql-common/createcluster.conf
+    option: initdb_options
+    value: '''{{ patroni_initdb_options }}'''
+    no_extra_spaces: false
+    create: false
+
+- name: Update config file
+  ansible.builtin.copy:
+    content: '{{ patroni_config |
+      ansible.builtin.combine(patroni_config_override, recursive=True) |
+      ansible.builtin.to_nice_yaml(indent=2, sort_keys=False,
+        explicit_start=True, explicit_end=True) }}'
+    dest: /etc/patroni/config.yml
+    owner: postgres
+    group: postgres
+    mode: '0640'
+  no_log: '{{ not patroni_debug }}'
+  notify: Restart service patroni
+
+- name: Enable and start patroni service
+  ansible.builtin.systemd_service:
+    name: patroni.service
+    enabled: true
+    state: started
+  ignore_errors: '{{ ansible_check_mode }}'
+
+- name: Check cluster health
+  ansible.builtin.command: >-
+    patronictl
+    --config-file /etc/patroni/config.yml
+    list
+    --format json
+  changed_when: false
+  register: patroni_cluster_health
+  until: patroni_cluster_health.stdout | from_json |
+    selectattr("TL", "defined") |
+    selectattr("Member", "eq", inventory_hostname)
+  retries: 6
+  delay: 10
+...

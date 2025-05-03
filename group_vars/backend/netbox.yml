@@ -1,0 +1,7 @@
+---
+netbox_user: netbox
+netbox_group: netbox
+netbox_uid: 60000
+netbox_gid: 60000
+netbox_var_dir: /var/lib/netbox
+...

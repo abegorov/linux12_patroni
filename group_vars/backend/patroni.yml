@@ -1,0 +1,15 @@
+---
+etcd_user: etcd
+etcd_group: etcd
+etcd_data: /var/lib/etcd
+
+etcd_name: '{{ inventory_hostname }}'
+etcd_ip: '{{ ip_address }}'
+etcd_cluster: '{{ groups["backend"] }}'
+etcd_metrics_ip: '{{ ip_address }}'
+
+patroni_replication_passwd: '{{ lookup("ansible.builtin.password",
+  "secrets/patroni_replication_passwd.txt", length=26) }}'
+patroni_rewind_passwd: '{{ lookup("ansible.builtin.password",
+  "secrets/patroni_rewind_passwd.txt", length=26) }}'
+...
