@@ -33,6 +33,7 @@
     - etcd
     - patroni
     - haproxy
+    - pgbouncer
 
 - name: Shared IP provision
   tags: keepalived
