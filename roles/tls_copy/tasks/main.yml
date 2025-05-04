@@ -9,7 +9,7 @@
       map(attribute="key_path") }}'
   ansible.builtin.file:
     path: '{{ item }}'
-    mode: '0755'
+    mode: '{{ tls_copy_dir_mode }}'
     state: directory
   loop: '{{ (ca_paths + cert_paths + key_paths) |
     map("ansible.builtin.dirname") | ansible.builtin.unique }}'
