@@ -7,10 +7,13 @@
     loop_var: passwd
   no_log: '{{ not debug }}'
 
-- name: Generate DH Parameters with a size 2048 bits
-  community.crypto.openssl_dhparam:
-    path: /etc/angie/dhparam
-    size: 2048
+- name: Update DH Parameters
+  ansible.builtin.copy:
+    content: '{{ angie_dhparam }}'
+    dest: /etc/angie/dhparam
+    owner: root
+    group: root
+    mode: '0644'
 
 - name: Configure angie
   ansible.builtin.copy:

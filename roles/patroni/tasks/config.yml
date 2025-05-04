@@ -7,6 +7,14 @@
     no_extra_spaces: false
     create: false
 
+- name: Update DH Parameters
+  ansible.builtin.copy:
+    content: '{{ patroni_pgsql_dhparam }}'
+    dest: /etc/patroni/dhparam
+    owner: root
+    group: root
+    mode: '0644'
+
 - name: Update config file
   ansible.builtin.copy:
     content: '{{ patroni_config |
