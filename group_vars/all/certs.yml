@@ -19,6 +19,11 @@ pgsql_ca_cert_path: '{{ pgsql_certs_dir }}/ca.crt'
 pgsql_ca_key_path: '{{ pgsql_certs_dir }}/ca.key'
 pgsql_cert_path: '{{ pgsql_certs_dir }}/{{ inventory_hostname }}.crt'
 pgsql_key_path: '{{ pgsql_certs_dir }}/{{ inventory_hostname }}.key'
+redis_certs_dir: secrets/certs/redis
+redis_ca_cert_path: '{{ redis_certs_dir }}/ca.crt'
+redis_ca_key_path: '{{ redis_certs_dir }}/ca.key'
+redis_cert_path: '{{ redis_certs_dir }}/{{ inventory_hostname }}.crt'
+redis_key_path: '{{ redis_certs_dir }}/{{ inventory_hostname }}.key'
 web_certs_dir: secrets/certs/web
 web_ca_cert_path: '{{ web_certs_dir }}/ca.crt'
 web_ca_key_path: '{{ web_certs_dir }}/ca.key'
@@ -42,6 +47,9 @@ tls_ca_certs:
   - common_name: LOCAL PGSQL ROOT CA
     cert_path: '{{ pgsql_ca_cert_path }}'
     key_path: '{{ pgsql_ca_key_path }}'
+  - common_name: LOCAL REDIS ROOT CA
+    cert_path: '{{ redis_ca_cert_path }}'
+    key_path: '{{ redis_ca_key_path }}'
   - common_name: LOCAL WEB ROOT CA
     cert_path: '{{ web_ca_cert_path }}'
     key_path: '{{ web_ca_key_path }}'
