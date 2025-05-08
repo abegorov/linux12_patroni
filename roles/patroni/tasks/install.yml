@@ -7,11 +7,12 @@
     no_extra_spaces: false
     create: false
 
-- name: Install patroni
+- name: Install patroni and requirements
   ansible.builtin.apt:
     name:
       - patroni
       - postgresql-{{ patroni_pgsql_version }}
+      - acl
     update_cache: true
     cache_valid_time: 3600
     state: present
