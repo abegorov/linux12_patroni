@@ -35,17 +35,7 @@
     state: started
   ignore_errors: '{{ ansible_check_mode }}'
 
-- name: Check cluster health
-  ansible.builtin.command: >-
-    patronictl
-    --config-file /etc/patroni/config.yml
-    list
-    --format json
-  changed_when: false
-  register: patroni_cluster_health
-  until: patroni_cluster_health.stdout | from_json |
-    selectattr("TL", "defined") |
-    selectattr("Member", "eq", inventory_hostname)
-  retries: 6
-  delay: 10
+- name: Update cluster facts
+  ansible.builtin.import_role:
+    name: patroni_facts
 ...
