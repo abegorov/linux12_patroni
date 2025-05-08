@@ -36,6 +36,9 @@
     - pgbouncer
     - redis
     - redis_sentinel
+    - patroni_user
+    - patroni_db
+    - patroni_privs
 
 - name: Shared IP provision
   tags: keepalived
