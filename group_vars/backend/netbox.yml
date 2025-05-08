@@ -4,4 +4,24 @@ netbox_group: netbox
 netbox_uid: 60000
 netbox_gid: 60000
 netbox_var_dir: /var/lib/netbox
+
+netbox_db: netbox
+netbox_db_user: netbox
+netbox_db_password: '{{ lookup("ansible.builtin.password",
+  "secrets/netbox_db_password.txt", length=26) }}'
+
+patroni_db_list:
+  - name: '{{ netbox_db }}'
+    owner: '{{ netbox_db_user }}'
+
+patroni_user_list:
+  - name: '{{ netbox_db_user }}'
+    password: '{{ netbox_db_password }}'
+
+patroni_privs_list:
+  - login_db: '{{ netbox_db }}'
+    objs: public
+    privs: CREATE
+    roles: '{{ netbox_db_user }}'
+    type: schema
 ...
