@@ -1,0 +1,5 @@
+---
+- name: Import install tasks
+  ansible.builtin.import_tasks: install.yml
+  tags: [netbox, netbox_install]
+...

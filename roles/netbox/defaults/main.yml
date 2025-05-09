@@ -1,0 +1,9 @@
+---
+netbox_version: '4.3.0'
+netbox_download_url: >-
+  https://github.com/netbox-community/netbox/archive/refs/tags/v{{
+  netbox_version }}.tar.gz
+
+netbox_unarchive_dir: /opt/netbox-{{ netbox_version }}
+netbox_dir: /opt/netbox
+...

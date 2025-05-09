@@ -39,6 +39,7 @@
     - patroni_user
     - patroni_db
     - patroni_privs
+    - netbox
 
 - name: Shared IP provision
   tags: keepalived
