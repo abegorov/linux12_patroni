@@ -1,4 +1,24 @@
 ---
+- name: Install NetBox requirements
+  ansible.builtin.apt:
+    name:
+      - python3
+      - python3-pip
+      - python3-venv
+      - python3-dev
+      - build-essential
+      - libxml2-dev
+      - libxslt1-dev
+      - libffi-dev
+      - libpq-dev
+      - libssl-dev
+      - zlib1g-dev
+    update_cache: true
+    cache_valid_time: 3600
+    state: present
+  retries: 10
+  delay: 10
+
 - name: Create NetBox directory
   ansible.builtin.file:
     path: '{{ netbox_unarchive_dir }}'
@@ -22,6 +42,12 @@
     src: '{{ netbox_unarchive_dir }}'
     dest: '{{ netbox_dir }}'
     state: link
+
+- name: Create NetBox config directory
+  ansible.builtin.file:
+    path: '{{ netbox_etc_dir }}'
+    state: directory
     owner: root
     group: root
+    mode: '0755'
 ...
