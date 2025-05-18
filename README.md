@@ -8,73 +8,58 @@
 
 Задание сделано так, чтобы его можно было запустить как в **Vagrant**, так и в **Yandex Cloud**. После запуска происходит развёртывание следующих виртуальных машин:
 
-- **mysql-iscsi-01** - сервер **iSCSI target**;
-- **mysql-iscsi-02** - сервер **iSCSI target**;
-- **mysql-backend-01** - **GLPI**, клиент файловой системы **GFS2**;
-- **mysql-backend-02** - **GLPI**, клиент файловой системы **GFS2**;
-- **mysql-backend-03** - **GLPI**, клиент файловой системы **GFS2**;
+- **psql-backend-01** - **NetBox**, **patroni**, **redis**, **angie**;
+- **psql-backend-02** - **NetBox**, **patroni**, **redis**, **angie**;
+- **psql-backend-03** - **NetBox**, **patroni**, **redis**, **angie**.
 
 В независимости от того, как созданы виртуальные машины, для их настройки запускается **Ansible Playbook** [provision.yml](provision.yml) который последовательно запускает следующие роли:
 
-- **wait_connection** - ожидает доступность виртуальных машин.
+- **angie** - устанавливает и настраивает **angie**;
 - **apt_sources** - настраивает репозитории для пакетного менеджера **apt** (используется [mirror.yandex.ru](https://mirror.yandex.ru)).
 - **bach_completion** - устанавливает пакет **bash-completion**.
 - **chrony** - устанавливает **chrony** для синхронизации времени между узлами.
+- **etcd** - устанавливает и настраивает кластер **etcd** для его дальнейшего использования **patroni**.
+- **haproxy** - устанавливает и настраивает **haproxy** для проксирования запросов к **redis** и **postgresql**.
 - **hosts** - прописывает адреса всех узлов в `/etc/hosts`.
-- **gen_keys** - генерит `/etc/corosync/authkey` для кластера **corosync**.
-- **disk_facts** - собирает информацию о дисках и их сигнатурах (с помощью утилит `lsblk` и `wipefs`).
-- **disk_label** - разбивает диски и устанавливает на них **GPT Partition Label** для их дальнейшей идентификации.
-- **target** - настраивает сервер **iSCSI Target**.
-- **linux_modules** - устанавливает модули ядра (в **Yandex Cloud** стоит **linux-virtual**, который не содержит модулей ядра для работы с **GFS2**).
-- **iscsi** - настраивает **iSCSI Initiator**.
-- **mpath** - настраивает **multipathd**, в частности прописывает **reservation_key** в `/etc/multipath.conf` для последующего использования в агенте **fence_mpath** для настройки **fencing**'а.
-- **corosync** - настраивает кластер **corosync** в несколько колец.
-- **dlm** - устанавливает распределённый менеджер блокировок **dlm**.
-- **mdadm** - устанавилвает **mdadm** и создаёт **RAID1** массив `/dev/md/cluster-md` (используется технология [MD Cluster](https://docs.kernel.org/driver-api/md/md-cluster.html)).
-- **lvm_facts** - с помощью утилит **vgs** и **lvs** собирает информацию о группах и томах **lvm**;
-- **lvm** - устанавливает **lvm2**, **lvm2-lockd**, создаёт группы томов, сами логические тома и активирует их.
-- **gfs2** - устанавливает **gfs2-utils**.
-- **filesystem** - форматирует общий диск в файловую систему **GFS2**.
-- **directory** - создаёт пустую директорию `/var/lib/glpi`.
-- **pacemaker** - устанавливает и настраивается **pacemaker**, который в свою очередь монтирует файловую систему `/dev/cluster-vg/cluster-lv` в `/var/lib/glpi`.
-- **angie** - устанавливает и настраивает **angie**;
-- **glpi** - устанавиливает и настраивает **glpi**;
-- **mariadb** - устанавиливает и настраивает **mariadb**;
-- **mariadb_databases** - создаёт базы данных в **mariadb**;
-- **mariadb_users** - создаёт пользователей, для подключения к **mariadb**;
-- **php_fpm** - устанавиливает и настраивает **php-fpm**;
-- **system_groups** - создаёт группы пользователей в системе (в частности для **glpi**);
-- **system_users** - создаёт пользователей в системе (в частности для **glpi**);
-- **tls_ca** - создаёт сертификаты для корневых центров сертификации;
-- **tls_certs** - создаёт сертификаты для узлов;
-- **tls_copy** - копирует серитификаты на узел;
 - **keepalived** - устанавливает и настраивает **keepalived** при разворачивании в **vagrant**.
+- **locale_gen** - генерит локаль **ru_RU.UTF-8** для последующего использования в **postgresql**.
+- **netbox** - устанавливает и настраивает **netbox**.
+- **patroni** - устанавливает и настраивает кластер **patroni**.
+- **patroni_db** - создаёт базу данных в кластере **patroni** (определяет лидера и создаёт её на лидере).
+- **patroni_facts** - собирает информацию о членах кластера **patroni** (определяет лидера).
+- **patroni_privs** - настраивает права доступа к базам данных в кластере **patroni**.
+- **patroni_user** - создаёт пользователей в кластере **patroni**.
+- **pgbouncer** - устанавливает и настраивает **pgbouncer**.
+- **pgdg_repo** - устанавливает репозиторий **pgdb** для **patroni** и **postgresql**.
+- **redis** - устанавливает и настраивает **redis** (с репликацией на другие узлы).
+- **redis_repo** - устанавливает и настраивает репозиторий для **redis**.
+- **redis_sentinel** - устанавливает и настраивает **redis sentinel** для автоматического переключения мастера в кластере **redis**.
+- **system_groups** - создаёт группы пользователей **Linux**.
+- **system_users** - создаёт группы пользователей **Linux**.
+- **tls_ca** - создаёт сертификаты для корневых центров сертификации.
+- **tls_certs** - создаёт сертификаты для узлов.
+- **tls_copy** - копирует серитификаты на узел.
+- **wait_connection** - ожидает доступность виртуальных машин.
 
 Данные роли настраиваются с помощью переменных, определённых в следующих файлах:
 
 - [group_vars/all/angie.yml](group_vars/all/angie.yml) - общие настройки **angie**;
 - [group_vars/all/ansible.yml](group_vars/all/ansible.yml) - общие переменные **ansible** для всех узлов;
 - [group_vars/all/certs.yml](group_vars/all/certs.yml) - настройки генерации сертификатов для СУБД и **angie**;
-- [group_vars/all/glpi.yml](group_vars/all/glpi.yml) - общие настройки **GLPI**;
 - [group_vars/all/hosts.yml](group_vars/all/hosts.yml) - настройки для роли **hosts** (список узлов, которые нужно добавить в `/etc/hosts`);
-- [group_vars/all/iscsi.yml](group_vars/all/iscsi.yml) - общие настройки для **iSCSI Target** и **iSCSI Initiator**;
 - [group_vars/backend/angie.yml](group_vars/backend/angie.yml) - настройки **angie** для узлов **backend**;
 - [group_vars/backend/certs.yml](group_vars/backend/certs.yml) - настройки генерации сертификатов для **backend**;
-- [group_vars/backend/corosync.yml](group_vars/backend/corosync.yml) - настройки **corosync**;
-- [group_vars/backend/gfs2.yml](group_vars/backend/gfs2.yml) - настройки **MD Cluster**, **LVM**, **GFS2**;
-- [group_vars/backend/glpi.yml](group_vars/backend/glpi.yml) - настройки **GLPI** для **backend**;
-- [group_vars/backend/iscsi.yml](group_vars/backend/iscsi.yml) - настройки **iSCSI Initiator**;
+- [group_vars/backend/haproxy.yml](group_vars/backend/haproxy.yml) - настройки **haproxy**  для узлов **backend** (проксирования не лидера **patroni** и **redis**);
 - [group_vars/backend/keepalived.yml](group_vars/backend/keepalived.yml) - настройки **keepalived** для узлов **backend**;
-- [group_vars/backend/mariadb.yml](group_vars/backend/mariadb.yml) - настройки **mariadb**;
-- [group_vars/backend/php.yml](group_vars/backend/php.yml) - настройки **PHP** для **backend**;
+- [group_vars/backend/netbox.yml](group_vars/backend/netbox.yml) - настройки **netbox** для узлов **backend**;
+- [group_vars/backend/patroni.yml](group_vars/backend/patroni.yml) - настройки **patroni** для узлов **backend**;
+- [group_vars/backend/pgbouncer.yml](group_vars/backend/pgbouncer.yml) - настройки **pgbouncer** для узлов **backend**;
+- [group_vars/backend/redis.yml](group_vars/backend/redis.yml) - настройки **redis** для узлов **backend**;
 - [group_vars/backend/users.yml](group_vars/backend/users.yml) - настройки создания пользователей и групп на узлах **backend**;
-- [group_vars/iscsi/iscsi.yml](group_vars/iscsi/iscsi.yml) - настройки **iSCSI Target**;
-- [host_vars/mysql-backend-01/gfs2.yml](host_vars/mysql-backend-01/gfs2.yml) - настройки создания **MD Cluster**, **LVM**, **GFS2**;
-- [host_vars/mysql-backend-01/pacemaker.yml](host_vars/mysql-backend-01/pacemaker.yml) - настройки **pacemaker**;
-- [host_vars/mysql-backend-01/mariadb.yml](host_vars/mysql-backend-01/mariadb.yml) - настройки **mariadb**;
-- [host_vars/mysql-backend-01/keepalived.yml](host_vars/mysql-backend-01/keepalived.yml) - настройки **keepalived** для **mysql-backend-01**;
-- [host_vars/mysql-backend-02/keepalived.yml](host_vars/mysql-backend-02/keepalived.yml) - настройки **keepalived** для **mysql-backend-02**;
-- [host_vars/mysql-backend-03/keepalived.yml](host_vars/mysql-backend-03/keepalived.yml) - настройки **keepalived** для **mysql-backend-03**.
+- [host_vars/psql-backend-01/redis.yml](host_vars/psql-backend-01/mariadb.yml) - настройки **redis** для **psql-backend-01**;
+- [host_vars/psql-backend-01/keepalived.yml](host_vars/psql-backend-01/keepalived.yml) - настройки **keepalived** для **psql-backend-01**;
+- [host_vars/psql-backend-02/keepalived.yml](host_vars/psql-backend-02/keepalived.yml) - настройки **keepalived** для **psql-backend-02**;
+- [host_vars/psql-backend-03/keepalived.yml](host_vars/psql-backend-03/keepalived.yml) - настройки **keepalived** для **psql-backend-03**.
 
 ## Запуск
 
@@ -107,206 +92,89 @@ rm vagrant.box
 - **Python 3.13.3**
 - **Jinja2 3.1.6**
 
-После запуска **GLPI** должен открываться по **IP** балансировщика. Для **Yandex Cloud** адрес можно узнать в выводе **terraform** в поле **load_balancer** (смотри [outputs.tf](outputs.tf)). Для **vagrant** это (можно использовать любой адрес):
+После запуска **NetBox** должен открываться по **IP** балансировщика. Для **Yandex Cloud** адрес можно узнать в выводе **terraform** в поле **load_balancer** (смотри [outputs.tf](outputs.tf)). Для **vagrant** это (можно использовать любой адрес):
 
-- [https://192.168.56.51](https://192.168.56.51) - узел **mysql-backend-01**.
-- [https://192.168.56.52](https://192.168.56.52) - узел **mysql-backend-02**.
-- [https://192.168.56.53](https://192.168.56.53) - узел **mysql-backend-03**.
+- [https://192.168.56.51](https://192.168.56.51) - узел **psql-backend-01**.
+- [https://192.168.56.52](https://192.168.56.52) - узел **psql-backend-02**.
+- [https://192.168.56.53](https://192.168.56.53) - узел **psql-backend-03**.
 
 Однако **keepalived** настроен таким образом, что при недоступности одного из узлов, его адрес переезжает на один из доступных.
 
-Проверим работу кластера **mariadb** на одном из узлов, для начала проверим конфигурацию:
+Проверим работу кластера **etcd**:
 
 ```text
-❯ vagrant ssh mysql-backend-01 -c 'cat /etc/mysql/my.cnf'
-[client-server]
-socket = "/run/mysqld/mysqld.sock"
-
-[mariadbd]
-pid_file = "/run/mysqld/mysqld.pid"
-basedir = "/usr"
-bind-address = "127.0.0.1"
-expire_logs_days = 10
-server_id = 0
-gtid_domain_id = "998211615"
-gtid_strict_mode = 1
-skip_name_resolve = 1
-wait_timeout = 60
-log_bin = 1
-log_basename = "mariadb"
-log_slave_updates = 1
-binlog_expire_logs_seconds = 604800
-max_binlog_size = "1G"
-ssl_ca = "/etc/mysql/mariadb_ca.crt"
-ssl_cert = "/etc/mysql/mariadb.crt"
-ssl_key = "/etc/mysql/mariadb.key"
-wsrep_on = 1
-wsrep_provider = "/usr/lib/libgalera_smm.so"
-wsrep_cluster_name = "GLPI"
-wsrep_cluster_address = "gcomm://192.168.56.21,192.168.56.22,192.168.56.23"
-wsrep_provider_options = "gmcast.listen_addr=tcp://192.168.56.21;socket.ssl_ca=/etc/mysql/mariadb_ca.crt;socket.ssl_cert=/etc/mysql/mariadb.crt;socket.ssl_key=/etc/mysql/mariadb.key"
-wsrep_node_address = "192.168.56.21"
-wsrep_node_name = "mysql-backend-01"
-wsrep_slave_threads = 4
-wsrep_sst_method = "mariabackup"
-wsrep_sst_auth = "mysql:"
-wsrep_gtid_mode = 1
-wsrep_gtid_domain_id = 998211614
-binlog_format = "ROW"
-default_storage_engine = "InnoDB"
-innodb_doublewrite = 1
-innodb_flush_log_at_trx_commit = 0
-innodb_autoinc_lock_mode = 2
+root@psql-backend-01:~# etcdctl endpoint status -w table
++--------------------------+------------------+---------+---------+-----------+------------+-----------+------------+--------------------+--------+
+|         ENDPOINT         |        ID        | VERSION | DB SIZE | IS LEADER | IS LEARNER | RAFT TERM | RAFT INDEX | RAFT APPLIED INDEX | ERRORS |
++--------------------------+------------------+---------+---------+-----------+------------+-----------+------------+--------------------+--------+
+| https://10.130.0.21:2379 | dfe9b3616ce3f55f |  3.5.21 |  344 kB |     false |      false |        18 |       1144 |               1144 |        |
+| https://10.130.0.22:2379 | 6202c9d185e9805e |  3.5.21 |  352 kB |     false |      false |        18 |       1144 |               1144 |        |
+| https://10.130.0.23:2379 | 203595bf9fae0634 |  3.5.21 |  352 kB |      true |      false |        18 |       1144 |               1144 |        |
++--------------------------+------------------+---------+---------+-----------+------------+-----------+------------+--------------------+--------+
 ```
 
-Проверим, что служба запущена на всех узлах:
+Проверим работу кластера **patroni**:
 
 ```text
-❯ vagrant ssh mysql-backend-01 -c 'systemctl status mariadb.service'
-● mariadb.service - MariaDB 11.7.2 database server
-     Loaded: loaded (/usr/lib/systemd/system/mariadb.service; enabled; preset: enabled)
-    Drop-In: /etc/systemd/system/mariadb.service.d
-             └─migrated-from-my.cnf-settings.conf
-     Active: active (running) since Thu 2025-05-01 14:34:53 UTC; 15min ago
-       Docs: man:mariadbd(8)
-             https://mariadb.com/kb/en/library/systemd/
-   Main PID: 5754 (mariadbd)
-     Status: "Taking your SQL requests now..."
-      Tasks: 21 (limit: 15003)
-     Memory: 285.9M (peak: 286.2M)
-        CPU: 6.634s
-     CGroup: /system.slice/mariadb.service
-             └─5754 /usr/sbin/mariadbd --wsrep_start_position=4825d4e1-2699-11f0-8e08-87e21ae24a04:15,998211614-1-13
-
-May 01 14:34:58 mysql-backend-01 mariadbd[5754]: =================================================
-May 01 14:34:58 mysql-backend-01 mariadbd[5754]: 2025-05-01 14:34:58 2 [Note] WSREP: wsrep_notify_cmd is not defined, skipping notification.
-May 01 14:34:58 mysql-backend-01 mariadbd[5754]: 2025-05-01 14:34:58 2 [Note] WSREP: Lowest cert index boundary for CC from group: 11
-May 01 14:34:58 mysql-backend-01 mariadbd[5754]: 2025-05-01 14:34:58 2 [Note] WSREP: Min available from gcache for CC from group: 1
-May 01 14:34:59 mysql-backend-01 mariadbd[5754]: 2025-05-01 14:34:59 0 [Note] WSREP: Member 2.0 (mysql-backend-03) requested state transfer >
-May 01 14:34:59 mysql-backend-01 mariadbd[5754]: 2025-05-01 14:34:59 0 [Note] WSREP: 1.0 (mysql-backend-02): State transfer to 2.0 (mysql-ba>
-May 01 14:34:59 mysql-backend-01 mariadbd[5754]: 2025-05-01 14:34:59 0 [Note] WSREP: Member 1.0 (mysql-backend-02) synced with group.
-May 01 14:34:59 mysql-backend-01 mariadbd[5754]: 2025-05-01 14:34:59 0 [Note] WSREP: 2.0 (mysql-backend-03): State transfer from 1.0 (mysql->
-May 01 14:34:59 mysql-backend-01 mariadbd[5754]: 2025-05-01 14:34:59 0 [Note] WSREP: Member 2.0 (mysql-backend-03) synced with group.
-May 01 14:35:00 mysql-backend-01 mariadbd[5754]: 2025-05-01 14:35:00 0 [Note] WSREP: (717b2058-9d50, 'ssl://192.168.56.21:4567') turning mes>
-
-❯ vagrant ssh mysql-backend-02 -c 'systemctl status mariadb.service'
-● mariadb.service - MariaDB 11.7.2 database server
-     Loaded: loaded (/usr/lib/systemd/system/mariadb.service; enabled; preset: enabled)
-    Drop-In: /etc/systemd/system/mariadb.service.d
-             └─migrated-from-my.cnf-settings.conf
-     Active: active (running) since Thu 2025-05-01 14:34:56 UTC; 15min ago
-       Docs: man:mariadbd(8)
-             https://mariadb.com/kb/en/library/systemd/
-   Main PID: 6468 (mariadbd)
-     Status: "Taking your SQL requests now..."
-      Tasks: 20 (limit: 15003)
-     Memory: 287.8M (peak: 288.1M)
-        CPU: 6.136s
-     CGroup: /system.slice/mariadb.service
-             └─6468 /usr/sbin/mariadbd --wsrep_start_position=4825d4e1-2699-11f0-8e08-87e21ae24a04:17,998211614-1-13
-
-May 01 14:34:59 mysql-backend-02 mariadbd[6468]: 2025-05-01 14:34:59 8 [Note] WSREP: Synchronized with group, ready for connections
-May 01 14:34:59 mysql-backend-02 mariadbd[6468]: 2025-05-01 14:34:59 8 [Note] WSREP: wsrep_notify_cmd is not defined, skipping notification.
-May 01 14:34:59 mysql-backend-02 mariadbd[6811]: WSREP_SST: [INFO] mariabackup IST completed on donor (20250501 14:34:59.344)
-May 01 14:34:59 mysql-backend-02 mariadbd[6811]: WSREP_SST: [INFO] Cleaning up temporary directories (20250501 14:34:59.347)
-May 01 14:34:59 mysql-backend-02 mariadbd[6468]: 2025-05-01 14:34:59 0 [Note] WSREP: Donor monitor thread ended with total time 0 sec
-May 01 14:34:59 mysql-backend-02 mariadbd[6468]: 2025-05-01 14:34:59 0 [Note] WSREP: Cleaning up SST user.
-May 01 14:34:59 mysql-backend-02 mariadbd[6468]: 2025-05-01 14:34:59 0 [Note] WSREP: async IST sender served
-May 01 14:34:59 mysql-backend-02 mariadbd[6468]: 2025-05-01 14:34:59 0 [Note] WSREP: 2.0 (mysql-backend-03): State transfer from 1.0 (mysql->
-May 01 14:34:59 mysql-backend-02 mariadbd[6468]: 2025-05-01 14:34:59 0 [Note] WSREP: Member 2.0 (mysql-backend-03) synced with group.
-May 01 14:35:01 mysql-backend-02 mariadbd[6468]: 2025-05-01 14:35:01 0 [Note] WSREP: (73148389-8e06, 'ssl://192.168.56.22:4567') turning mes>
-
-❯ vagrant ssh mysql-backend-03 -c 'systemctl status mariadb.service'
-● mariadb.service - MariaDB 11.7.2 database server
-     Loaded: loaded (/usr/lib/systemd/system/mariadb.service; enabled; preset: enabled)
-    Drop-In: /etc/systemd/system/mariadb.service.d
-             └─migrated-from-my.cnf-settings.conf
-     Active: active (running) since Thu 2025-05-01 14:34:59 UTC; 15min ago
-       Docs: man:mariadbd(8)
-             https://mariadb.com/kb/en/library/systemd/
-   Main PID: 6743 (mariadbd)
-     Status: "Taking your SQL requests now..."
-      Tasks: 20 (limit: 15003)
-     Memory: 288.2M (peak: 288.5M)
-        CPU: 5.924s
-     CGroup: /system.slice/mariadb.service
-             └─6743 /usr/sbin/mariadbd --wsrep_start_position=4825d4e1-2699-11f0-8e08-87e21ae24a04:19,998211614-1-13
-
-May 01 14:34:59 mysql-backend-03 mariadbd[6743]: 2025-05-01 14:34:59 0 [Note] WSREP: Member 2.0 (mysql-backend-03) synced with group.
-May 01 14:34:59 mysql-backend-03 mariadbd[6743]: 2025-05-01 14:34:59 0 [Note] WSREP: Processing event queue:... 100.0% (1/1 events) complete.
-May 01 14:34:59 mysql-backend-03 mariadbd[6743]: 2025-05-01 14:34:59 0 [Note] WSREP: Shifting JOINED -> SYNCED (TO: 21)
-May 01 14:34:59 mysql-backend-03 mariadbd[6743]: 2025-05-01 14:34:59 2 [Note] WSREP: Server mysql-backend-03 synced with group
-May 01 14:34:59 mysql-backend-03 mariadbd[6743]: 2025-05-01 14:34:59 2 [Note] WSREP: Server status change joined -> synced
-May 01 14:34:59 mysql-backend-03 mariadbd[6743]: 2025-05-01 14:34:59 2 [Note] WSREP: Synchronized with group, ready for connections
-May 01 14:34:59 mysql-backend-03 mariadbd[6743]: 2025-05-01 14:34:59 2 [Note] WSREP: wsrep_notify_cmd is not defined, skipping notification.
-May 01 14:34:59 mysql-backend-03 /etc/mysql/debian-start[7044]: Checking for insecure root accounts.
-May 01 14:34:59 mysql-backend-03 /etc/mysql/debian-start[7048]: Triggering myisam-recover for all MyISAM tables and aria-recover for all Ari>
-May 01 14:35:01 mysql-backend-03 mariadbd[6743]: 2025-05-01 14:35:01 0 [Note] WSREP: (74b588d4-8ee7, 'ssl://192.168.56.23:4567') turning mes>
+root@psql-backend-01:~# patronictl list
++ Cluster: 17-patroni (7505766679951925793) -----+-----------+----+-----------+
+| Member          | Host        | Role           | State     | TL | Lag in MB |
++-----------------+-------------+----------------+-----------+----+-----------+
+| psql-backend-01 | 10.130.0.21 | Leader         | running   |  4 |           |
+| psql-backend-02 | 10.130.0.22 | Quorum Standby | streaming |  4 |         0 |
+| psql-backend-03 | 10.130.0.23 | Quorum Standby | streaming |  4 |         0 |
++-----------------+-------------+----------------+-----------+----+-----------+
 ```
 
-Для проверки состояния кластера воспользуемся статьёй [Using Status Variables](https://galeracluster.com/library/documentation/monitoring-cluster.html). Проверим, указанные в статье переменные кластера:
+Проверим работу **redis sentinel** (пароль можно взять в файле `secrets/redis_password.txt`):
 
 ```text
-❯ vagrant ssh mysql-backend-01 -c "sudo mariadb -e \"SHOW GLOBAL STATUS WHERE Variable_name in ('wsrep_cluster_state_uuid', 'wsrep_cluster_conf_id', 'wsrep_cluster_size', 'wsrep_cluster_status', 'wsrep_ready', 'wsrep_connected', 'wsrep_local_state_comment', 'wsrep_local_recv_queue_avg', 'wsrep_flow_control_paused', 'wsrep_cert_deps_distance', 'wsrep_local_send_queue_avg');\""
-+----------------------------+--------------------------------------+
-| Variable_name              | Value                                |
-+----------------------------+--------------------------------------+
-| wsrep_local_send_queue_avg | 0.000234852                          |
-| wsrep_local_recv_queue_avg | 0.0208333                            |
-| wsrep_flow_control_paused  | 4.25133e-05                          |
-| wsrep_cert_deps_distance   | 56.4852                              |
-| wsrep_local_state_comment  | Synced                               |
-| wsrep_cluster_conf_id      | 8                                    |
-| wsrep_cluster_size         | 3                                    |
-| wsrep_cluster_state_uuid   | 4825d4e1-2699-11f0-8e08-87e21ae24a04 |
-| wsrep_cluster_status       | Primary                              |
-| wsrep_connected            | ON                                   |
-| wsrep_ready                | ON                                   |
-+----------------------------+--------------------------------------+
+root@psql-backend-01:~# redis-cli --askpass --insecure --tls -p 26379 info sentinel
+Please input password: **************************
+# Sentinel
+sentinel_masters:1
+sentinel_tilt:0
+sentinel_tilt_since_seconds:-1
+sentinel_running_scripts:0
+sentinel_scripts_queue_length:0
+sentinel_simulate_failure_flags:0
+master0:name=mymaster,status=ok,address=10.130.0.21:6379,slaves=2,sentinels=3
 
-❯ vagrant ssh mysql-backend-02 -c "sudo mariadb -e \"SHOW GLOBAL STATUS WHERE Variable_name in ('wsrep_cluster_state_uuid', 'wsrep_cluster_conf_id', 'wsrep_cluster_size', 'wsrep_cluster_status', 'wsrep_ready', 'wsrep_connected', 'wsrep_local_state_comment', 'wsrep_local_recv_queue_avg', 'wsrep_flow_control_paused', 'wsrep_cert_deps_distance', 'wsrep_local_send_queue_avg');\""
-+----------------------------+--------------------------------------+
-| Variable_name              | Value                                |
-+----------------------------+--------------------------------------+
-| wsrep_local_send_queue_avg | 0                                    |
-| wsrep_local_recv_queue_avg | 0.745404                             |
-| wsrep_flow_control_paused  | 4.20726e-05                          |
-| wsrep_cert_deps_distance   | 56.4852                              |
-| wsrep_local_state_comment  | Synced                               |
-| wsrep_cluster_conf_id      | 8                                    |
-| wsrep_cluster_size         | 3                                    |
-| wsrep_cluster_state_uuid   | 4825d4e1-2699-11f0-8e08-87e21ae24a04 |
-| wsrep_cluster_status       | Primary                              |
-| wsrep_connected            | ON                                   |
-| wsrep_ready                | ON                                   |
-+----------------------------+--------------------------------------+
-
-❯ vagrant ssh mysql-backend-03 -c "sudo mariadb -e \"SHOW GLOBAL STATUS WHERE Variable_name in ('wsrep_cluster_state_uuid', 'wsrep_cluster_conf_id', 'wsrep_cluster_size', 'wsrep_cluster_status', 'wsrep_ready', 'wsrep_connected', 'wsrep_local_state_comment', 'wsrep_local_recv_queue_avg', 'wsrep_flow_control_paused', 'wsrep_cert_deps_distance', 'wsrep_local_send_queue_avg');\""
-+----------------------------+--------------------------------------+
-| Variable_name              | Value                                |
-+----------------------------+--------------------------------------+
-| wsrep_local_send_queue_avg | 0                                    |
-| wsrep_local_recv_queue_avg | 1.02298                              |
-| wsrep_flow_control_paused  | 3.44676e-05                          |
-| wsrep_cert_deps_distance   | 56.4852                              |
-| wsrep_local_state_comment  | Synced                               |
-| wsrep_cluster_conf_id      | 8                                    |
-| wsrep_cluster_size         | 3                                    |
-| wsrep_cluster_state_uuid   | 4825d4e1-2699-11f0-8e08-87e21ae24a04 |
-| wsrep_cluster_status       | Primary                              |
-| wsrep_connected            | ON                                   |
-| wsrep_ready                | ON                                   |
-+----------------------------+--------------------------------------+
+root@psql-backend-01:~# redis-cli --askpass --insecure --tls -p 26379 sentinel ckquorum mymaster
+Please input password: **************************
+OK 3 usable Sentinels. Quorum and failover authorization can be reached
 ```
 
-Как видно кластер полностью исправен.
+Проверим работу **haproxy** (имя пользователя **stats** пароль можно взять в файле `secrets/haproxy_stats_password.txt`):
 
-Для проверки отказоустойчивости можно выполнить следующее:
+![haproxy](images/haproxy.png)
 
-1. Зайдём на [https://192.168.56.51](https://192.168.56.51) - узел **mysql-backend-01** (имя пользователя **glpi**, пароль **glpi**).
-2. Создадим заявку (**Поддержка** -> **Заявки** -> **Добавить**).
-3. Выключим **mysql-backend-01**.
+Проверим работу **netbox** (имя пользователя **admin** пароль можно взять в файле `secrets/netbox_superuser_password.txt`):
 
-**IP** адрес переехал **mysql-backend-03**, никакие данные не были потеряны и заявка осталась в системе:
+![netbox](images/netbox.png)
 
-![Тестовая заяка 1](images/task.png)
+Как видно из вывода **haproxy**, лидер для **patroni** и **redis** находится на первом узле, выключим его и проверим, что **netbox** продолжил работать. Для переключения узла лидера требуется некоторое время, после чего работа **netbox** полностью восстанавливается.
+
+Если мы включим первый узел и заново подключимся к нему через **ssh**, то сможем увидеть, что лидеры переключились на другой узел:
+
+```text
+root@psql-backend-01:~# patronictl list
++ Cluster: 17-patroni (7505766679951925793) -----+-----------+----+-----------+
+| Member          | Host        | Role           | State     | TL | Lag in MB |
++-----------------+-------------+----------------+-----------+----+-----------+
+| psql-backend-01 | 10.130.0.21 | Quorum Standby | streaming |  5 |         0 |
+| psql-backend-02 | 10.130.0.22 | Quorum Standby | streaming |  5 |         0 |
+| psql-backend-03 | 10.130.0.23 | Leader         | running   |  5 |           |
++-----------------+-------------+----------------+-----------+----+-----------+
+
+root@psql-backend-01:~# redis-cli --askpass --insecure --tls -p 26379 info sentinel
+Please input password: **************************
+# Sentinel
+sentinel_masters:1
+sentinel_tilt:0
+sentinel_tilt_since_seconds:-1
+sentinel_running_scripts:0
+sentinel_scripts_queue_length:0
+sentinel_simulate_failure_flags:0
+master0:name=mymaster,status=ok,address=10.130.0.22:6379,slaves=2,sentinels=3
+```
