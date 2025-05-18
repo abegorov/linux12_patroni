@@ -19,7 +19,7 @@ pgbouncer_config_override:
     client_tls_key_file: /etc/pgbouncer/server.key
     client_tls_protocols: secure
     client_tls_ciphers: secure
-    server_tls_sslmode: prefer
+    server_tls_sslmode: verify-full
     server_tls_ca_file: /etc/pgbouncer/ca.crt
     server_tls_cert_file: /etc/pgbouncer/server.crt
     server_tls_key_file: /etc/pgbouncer/server.key
