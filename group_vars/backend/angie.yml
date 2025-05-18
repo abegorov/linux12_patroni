@@ -1,5 +1,4 @@
 ---
-angie_autostart: false
 angie_httpd_conf_backend:
   backend: |
     server {
@@ -10,8 +9,17 @@ angie_httpd_conf_backend:
       ssl_certificate     {{ angie_web_cert.cert_path }};
       ssl_certificate_key {{ angie_web_cert.key_path }};
 
+      client_max_body_size 25m;
+
+      location /static/ {
+        alias /opt/netbox/netbox/static/;
+      }
+
       location / {
-        deny all;
+        proxy_pass http://unix:/run/netbox.sock;
+        proxy_set_header X-Forwarded-Host $http_host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
       }
     }
 angie_httpd_conf: '{{ angie_httpd_conf_default | ansible.builtin.combine(
