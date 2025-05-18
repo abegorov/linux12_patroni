@@ -37,4 +37,6 @@ redis_sentinel_sentinels: |
   {% set hostvar = hostvars[host] %}
   mymaster {{ hostvar.ip_address }} 26379 {{ hostvar.redis_sentinel_myid }}
   {% endfor %}
+
+redis_sentinel_tuple: ('{{ ip_address }}', 26379)
 ...

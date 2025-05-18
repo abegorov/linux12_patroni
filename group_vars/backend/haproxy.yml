@@ -1,5 +1,6 @@
 ---
 haproxy_patroni_servers: '{{ groups["backend"] }}'
+haproxy_redis_servers: '{{ groups["backend"] }}'
 
 haproxy_stats_password: '{{ lookup("ansible.builtin.password",
   "secrets/haproxy_stats_password.txt", length=26, encrypt="bcrypt") }}'
@@ -11,6 +12,12 @@ haproxy_certs:
     ca_content: '{{ lookup("ansible.builtin.file", patroni_ca_cert_path) }}'
     cert_content: '{{ lookup("ansible.builtin.file", patroni_cert_path) }}'
     key_content: '{{ lookup("ansible.builtin.file", patroni_key_path) }}'
+  - ca_path: /etc/haproxy/redisca.crt
+    cert_path: /etc/haproxy/redis.crt
+    key_path: /etc/haproxy/redis.key
+    ca_content: '{{ lookup("ansible.builtin.file", redis_ca_cert_path) }}'
+    cert_content: '{{ lookup("ansible.builtin.file", redis_cert_path) }}'
+    key_content: '{{ lookup("ansible.builtin.file", redis_key_path) }}'
   - cert_path: /etc/haproxy/web.crt
     key_path: /etc/haproxy/web.key
     ca_content: '{{ lookup("ansible.builtin.file", web_ca_cert_path) }}'
@@ -20,6 +27,7 @@ haproxy_certs:
 haproxy_config_append:
   crt-store:
     - load crt "patroni.crt" key "patroni.key"
+    - load crt "redis.crt" key "redis.key"
     - load crt "web.crt" key "web.key"
   defaults:
     -
@@ -80,5 +88,24 @@ haproxy_config_append:
     - |
       {% for server in haproxy_patroni_servers %}
       server {{ server }} {{ hostvars[server].ip_address }}:6432 check
+      {% endfor %}
+  listen redis-master:
+    - bind 127.0.0.1:6380
+    - bind ::1:6380
+    - bind {{ ip_address }}:6380
+    - option clitcpka
+    - option tcp-check
+    - default-server inter 100 fall 3 rise 2 on-marked-down shutdown-sessions
+      verify required ca-file "redisca.crt" crt "redis.crt"
+    - tcp-check connect ssl
+    - tcp-check send AUTH\ {{ redis_password }}\r\n
+    - tcp-check expect string +OK
+    - tcp-check send info\ replication\r\n
+    - tcp-check expect string role:master
+    - tcp-check send QUIT\r\n
+    - tcp-check expect string +OK
+    - |
+      {% for server in haproxy_redis_servers %}
+      server {{ server }} {{ hostvars[server].ip_address }}:6379 check
       {% endfor %}
 ...
