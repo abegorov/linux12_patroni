@@ -27,6 +27,15 @@
     mode: '0644'
   notify: Restart service etcd
 
+- name: Update etcd systemd service
+  ansible.builtin.template:
+    src: etcd.service
+    dest: /etc/systemd/system/etcd.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart service etcd
+
 - name: Enable and start etcd service
   ansible.builtin.systemd_service:
     name: etcd.service
