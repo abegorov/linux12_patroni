@@ -27,7 +27,7 @@
     filename: angie
     state: present
 
-- name: Install angie and required module
+- name: Install angie and required modules
   ansible.builtin.apt:
     name: '{{ ["angie", "ca-certificates"] + ["angie-module-"] |
       ansible.builtin.product(angie_modules) | map("join") }}'
