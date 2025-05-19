@@ -53,7 +53,8 @@ netbox_redis_password: ''
 netbox_superuser: admin
 netbox_superuser_email: root@localhost
 netbox_superuser_password: '{{ lookup("ansible.builtin.password",
-  netbox_superuser_password_path, length=26) }}'
+  netbox_superuser_password_path, length=26,
+  chars=["ascii_letters", "digits", ".,-_"]) }}'
 netbox_superuser_password_path: secrets/netbox_superuser_password.txt
 
 netbox_socket: /run/netbox.sock
