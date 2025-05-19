@@ -33,12 +33,14 @@
     owner: '{{ netbox_user }}'
     group: '{{ netbox_group }}'
     mode: '0440'
+  notify: Restart netbox service
 
 - name: Create configuration symlink
   ansible.builtin.file:
     src: '{{ netbox_etc_dir }}/configuration.py'
     dest: '{{ netbox_dir }}/netbox/netbox/configuration.py'
     state: link
+  notify: Restart netbox service
 
 - name: Create NetBox virtual environment
   ansible.builtin.command:
@@ -54,10 +56,12 @@
     owner: '{{ netbox_user }}'
     group: '{{ netbox_group }}'
     mode: '0440'
+  notify: Restart netbox service
 
 - name: Create gunicorn configuration symlink
   ansible.builtin.file:
     src: '{{ netbox_etc_dir }}/gunicorn.py'
     dest: '{{ netbox_dir }}/gunicorn.py'
     state: link
+  notify: Restart netbox service
 ...

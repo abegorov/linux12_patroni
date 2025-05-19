@@ -15,7 +15,7 @@
     owner: root
     group: root
     mode: '0644'
-  notify: Reload netbox service
+  notify: Restart netbox service
 
 - name: Update netbox-rq service
   ansible.builtin.template:
